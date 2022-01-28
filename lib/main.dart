@@ -1,31 +1,34 @@
 import 'dart:async';
 import 'dart:math';
-
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geofence_service/geofence_service.dart';
+import 'package:my_geofence/add_hospital.dart';
+import 'package:my_geofence/hopitals.dart';
+import 'package:my_geofence/hospital_screen.dart';
+import 'package:my_geofence/map_screen.dart';
 
-void main() => runApp(const MyApp());
+List<Hospitals> hospitals = [];
+
+void main() => runApp( MyApp());
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
 
   @override
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  final _activityStreamController = StreamController<Activity>();
-  final _geofenceStreamController = StreamController<Geofence>();
-
   // Create a [GeofenceService] instance and set options.
   final _geofenceService = GeofenceService.instance.setup(
       interval: 5000,
       accuracy: 100,
       loiteringDelayMs: 60000,
       statusChangeDelayMs: 10000,
-      useActivityRecognition: true,
-      allowMockLocations: false,
+      useActivityRecognition: false,
+      allowMockLocations: true,
       printDevLog: false,
       geofenceRadiusSortType: GeofenceRadiusSortType.DESC);
 
@@ -33,16 +36,8 @@ class _MyAppState extends State<MyApp> {
   final _geofenceList = <Geofence>[
     Geofence(
       id: 'place_1',
-      latitude: 24.884067,
-      longitude: 67.093369,
-      radius: [
-        GeofenceRadius(id: 'radius_400m', length: 400),
-      ],
-    ),
-    Geofence(
-      id: 'place_2',
-      latitude: 24.883735,
-      longitude: 67.092969,
+      latitude: 24.882998,
+      longitude: 67.09685,
       radius: [
         GeofenceRadius(id: 'radius_400m', length: 400),
       ],
@@ -55,44 +50,22 @@ class _MyAppState extends State<MyApp> {
       GeofenceRadius geofenceRadius,
       GeofenceStatus geofenceStatus,
       Location location) async {
-    if(geofenceStatus==GeofenceStatus.ENTER){
+    if (geofenceStatus == GeofenceStatus.ENTER) {
       displayNotification(
-        "Geofence Notification",
-        "Enter Geofence",
+        "Visiting a Hospital? Why wait in long queues when you can consult a certified doctor through our App? Click here to experience the convenience of TPL Sahulat.",
         id: Random().nextInt(1000),
       );
-    }else if(geofenceStatus==GeofenceStatus.EXIT){
+    } else if (geofenceStatus == GeofenceStatus.EXIT) {
       displayNotification(
-        "Geofence Notification",
-        "Exit Geofence",
+        "In need of a Doctor? Consult a certified doctor through our App right away. Click here to experience the convenience of TPL Sahulat.",
         id: Random().nextInt(1000),
       );
-    }else if(geofenceStatus==GeofenceStatus.DWELL){
+    } else if (geofenceStatus == GeofenceStatus.DWELL) {
       displayNotification(
-        "Geofence Notification",
-        "Dwell Geofence",
+        "In need of a Doctor? Book a Doctor to visit you at home through our App right away. Click here to experience the convenience of TPL Sahulat.",
         id: Random().nextInt(1000),
       );
     }
-    _geofenceStreamController.sink.add(geofence);
-  }
-
-  // This function is to be called when the activity has changed.
-  void _onActivityChanged(Activity prevActivity, Activity currActivity) {
-    print('prevActivity: ${prevActivity.toJson()}');
-    print('currActivity: ${currActivity.toJson()}');
-    _activityStreamController.sink.add(currActivity);
-  }
-
-  // This function is to be called when the location has changed.
-  void _onLocationChanged(Location location) {
-    print('location: ${location.toJson()}');
-  }
-
-  // This function is to be called when a location services status change occurs
-  // since the service was started.
-  void _onLocationServicesStatusChanged(bool status) {
-    print('isLocationServicesEnabled: $status');
   }
 
   // This function is used to handle errors that occur in the service.
@@ -112,15 +85,15 @@ class _MyAppState extends State<MyApp> {
   setUpNotification() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('app_icon');
-    final IOSInitializationSettings initializationSettingsIOS =
+    const IOSInitializationSettings initializationSettingsIOS =
         IOSInitializationSettings();
-    final InitializationSettings initializationSettings =
+    const InitializationSettings initializationSettings =
         InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
     await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-        onSelectNotification: (String? payload) {});
+        onSelectNotification: (String payload) {});
   }
 
   @override
@@ -130,20 +103,16 @@ class _MyAppState extends State<MyApp> {
     WidgetsBinding.instance?.addPostFrameCallback((_) {
       _geofenceService
           .addGeofenceStatusChangeListener(_onGeofenceStatusChanged);
-      _geofenceService.addLocationChangeListener(_onLocationChanged);
-      _geofenceService.addLocationServicesStatusChangeListener(
-          _onLocationServicesStatusChanged);
-      _geofenceService.addActivityChangeListener(_onActivityChanged);
       _geofenceService.addStreamErrorListener(_onError);
       _geofenceService.start(_geofenceList).catchError(_onError);
     });
   }
-
+  GlobalKey<NavigatorState> navigatorKey = GlobalKey(debugLabel: "Main Navigator");
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // A widget used when you want to start a foreground task when trying to minimize or close the app.
-      // Declare on top of the [Scaffold] widget.
+      navigatorKey: navigatorKey,
+      theme: ThemeData(primarySwatch: Colors.blue),
       home: WillStartForegroundTask(
         onWillStart: () async {
           // You can add a foreground task start condition.
@@ -162,9 +131,9 @@ class _MyAppState extends State<MyApp> {
         notificationTitle: 'Geofence Service is running',
         notificationText: 'Tap to return to the app',
         child: Scaffold(
+          backgroundColor: Colors.grey.shade100,
           appBar: AppBar(
-            title: const Text('Geofence Service'),
-            centerTitle: true,
+            title: const Text('Geofence Hospitals'),
           ),
           body: _buildContentView(),
         ),
@@ -172,82 +141,166 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  @override
-  void dispose() {
-    _activityStreamController.close();
-    _geofenceStreamController.close();
-    super.dispose();
-  }
-
   Widget _buildContentView() {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(8.0),
+    return Column(
       children: [
-        _buildActivityMonitor(),
-        const SizedBox(height: 20.0),
-        _buildGeofenceMonitor(),
+        const SizedBox(height: 25),
+        buildSlider(),
+        const SizedBox(height: 20),
+        buildGridView(onTap: (index) {
+          if (index == 0) {
+            newScreen(const HospitalScreen());
+          } else if (index == 1) {
+            newScreen(const MapScreen());
+          }else if (index == 2) {
+            newScreen(AddHospitalScreen());
+          }
+        })
       ],
     );
   }
 
-  Widget _buildActivityMonitor() {
-    return StreamBuilder<Activity>(
-      stream: _activityStreamController.stream,
-      builder: (context, snapshot) {
-        final updatedDateTime = DateTime.now();
-        final content = snapshot.data?.toJson().toString() ?? '';
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('•\t\tActivity (updated: $updatedDateTime)'),
-            const SizedBox(height: 10.0),
-            Text(content),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildGeofenceMonitor() {
-    return StreamBuilder<Geofence>(
-      stream: _geofenceStreamController.stream,
-      builder: (context, snapshot) {
-        final updatedDateTime = DateTime.now();
-        final content = snapshot.data?.toJson().toString() ?? '';
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('•\t\tGeofence (updated: $updatedDateTime)'),
-            const SizedBox(height: 10.0),
-            Text(content),
-          ],
-        );
-      },
-    );
-  }
+  newScreen(pageName) => navigatorKey.currentState.push(MaterialPageRoute(builder: (BuildContext context) => pageName));
 }
 
-Future<void> displayNotification(String title, String body,
-    {int id = 1,String? payload}) async {
+CarouselSlider buildSlider() {
+  return CarouselSlider(
+    options: CarouselOptions(
+      height: 150.0,
+      enlargeCenterPage: true,
+      autoPlay: true,
+      aspectRatio: 16 / 9,
+      autoPlayCurve: Curves.easeInOut,
+      enableInfiniteScroll: true,
+      autoPlayAnimationDuration: const Duration(milliseconds: 800),
+      viewportFraction: 0.7,
+    ),
+    items: [
+      "image1",
+      "image2",
+      "image4",
+      "image5",
+      "image6",
+    ]
+        .map(
+          (image) => Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black54.withOpacity(0.1),
+                    blurRadius: 3,
+                    spreadRadius: 3,
+                    offset: const Offset(0, 3))
+              ],
+            ),
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: FadeInImage(
+                fit: BoxFit.fill,
+                placeholder: const AssetImage('images/image1.png'),
+                image: AssetImage("images/$image.png"),
+              ),
+            ),
+          ),
+        )
+        .toList(),
+  );
+}
+
+Widget buildGridView({
+  @required Function(int) onTap,
+}) {
+  return GridView.count(
+    primary: false,
+    shrinkWrap: true,
+    childAspectRatio: 1.2,
+    crossAxisCount: 2,
+    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+    mainAxisSpacing: 10.0,
+    crossAxisSpacing: 10.0,
+    children: [
+      {"title": "Hospitals", "icon": Icons.local_hospital, "index": 0},
+      {"title": "Map", "icon": Icons.map, "index": 1},
+      {"title": "Add Hospital", "icon": Icons.add_box_rounded, "index": 2},
+      {"title": "Start Geofence", "icon": Icons.play_circle_fill, "index": 3},
+    ]
+        .map(
+          (option) => Card(
+            clipBehavior: Clip.antiAlias,
+            elevation: 3,
+            margin: EdgeInsets.zero,
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16))),
+            child: buildGridItem(
+              onTap: onTap,
+              quickLink: option,
+            ),
+          ),
+        )
+        .toList(),
+  );
+}
+
+Widget buildGridItem({
+  @required Map quickLink,
+  @required Function(int) onTap,
+}) {
+  String title = quickLink['title'];
+  return InkWell(
+    onTap: () {
+      onTap(quickLink['index']);
+    },
+    child: Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            quickLink['icon'],
+            size: 40,
+          ),
+          const SizedBox(
+            width: 60,
+            child: Divider(
+              thickness: 1,
+            ),
+          ),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> displayNotification(String body,
+    {int id = 1, String payload}) async {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-  FlutterLocalNotificationsPlugin();
+      FlutterLocalNotificationsPlugin();
   AndroidNotificationDetails androidPlatformChannelSpecifics =
-  const AndroidNotificationDetails('id', 'name',
-      channelDescription: 'description',
-      importance: Importance.high,
-      priority: Priority.high,
-     );
+      const AndroidNotificationDetails(
+    'id',
+    'name',
+    channelDescription: 'description',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
   NotificationDetails platformChannelSpecifics = NotificationDetails(
     android: androidPlatformChannelSpecifics,
   );
-    await flutterLocalNotificationsPlugin.show(
-      id,
-      title,
-      body,
-      platformChannelSpecifics,
-      payload: payload!,
-    );
+  await flutterLocalNotificationsPlugin.show(
+    id,
+    "Geofence",
+    body,
+    platformChannelSpecifics,
+    payload: "1",
+  );
 }

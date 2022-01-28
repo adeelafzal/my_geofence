@@ -45,6 +45,8 @@
        <service
            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
            android:foregroundServiceType="location"
-           android:stopWithTask="true" />
+           android:stopWithTask="false" />
+       <meta-data android:name="com.google.android.geo.API_KEY"
+           android:value="AIzaSyBZCM_T_2Bq1n_-i9YogsPA7w4ThZ0Vm2o"/>
     </application>
 </manifest>
