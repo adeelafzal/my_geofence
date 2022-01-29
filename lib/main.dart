@@ -11,11 +11,11 @@ import 'package:my_geofence/hospital_screen.dart';
 import 'package:my_geofence/map_screen.dart';
 
 List<Hospitals> hospitals = [];
+final geofenceList = <Geofence>[];
 
-void main() => runApp( MyApp());
+void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
-
   @override
   _MyAppState createState() => _MyAppState();
 }
@@ -33,16 +33,6 @@ class _MyAppState extends State<MyApp> {
       geofenceRadiusSortType: GeofenceRadiusSortType.DESC);
 
   // Create a [Geofence] list.
-  final _geofenceList = <Geofence>[
-    Geofence(
-      id: 'place_1',
-      latitude: 24.882998,
-      longitude: 67.09685,
-      radius: [
-        GeofenceRadius(id: 'radius_400m', length: 400),
-      ],
-    ),
-  ];
 
   // This function is to be called when the geofence status is changed.
   Future<void> _onGeofenceStatusChanged(
@@ -50,19 +40,23 @@ class _MyAppState extends State<MyApp> {
       GeofenceRadius geofenceRadius,
       GeofenceStatus geofenceStatus,
       Location location) async {
+    geofence.id;
     if (geofenceStatus == GeofenceStatus.ENTER) {
       displayNotification(
-        "Visiting a Hospital? Why wait in long queues when you can consult a certified doctor through our App? Click here to experience the convenience of TPL Sahulat.",
+        geofence.id,
+        "Visiting a Restaurant? Why wait in long queues when you can get food to near you",
         id: Random().nextInt(1000),
       );
     } else if (geofenceStatus == GeofenceStatus.EXIT) {
       displayNotification(
-        "In need of a Doctor? Consult a certified doctor through our App right away. Click here to experience the convenience of TPL Sahulat.",
+        geofence.id,
+        "In need of a Food? visit nearest restaurant.",
         id: Random().nextInt(1000),
       );
     } else if (geofenceStatus == GeofenceStatus.DWELL) {
       displayNotification(
-        "In need of a Doctor? Book a Doctor to visit you at home through our App right away. Click here to experience the convenience of TPL Sahulat.",
+        geofence.id,
+        "In need of a food? Get your food right now.",
         id: Random().nextInt(1000),
       );
     }
@@ -104,10 +98,12 @@ class _MyAppState extends State<MyApp> {
       _geofenceService
           .addGeofenceStatusChangeListener(_onGeofenceStatusChanged);
       _geofenceService.addStreamErrorListener(_onError);
-      _geofenceService.start(_geofenceList).catchError(_onError);
     });
   }
-  GlobalKey<NavigatorState> navigatorKey = GlobalKey(debugLabel: "Main Navigator");
+
+  GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey(debugLabel: "Main Navigator");
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -141,6 +137,13 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  List data = [
+    {"title": "Restaurants", "icon": Icons.restaurant, "index": 0},
+    {"title": "Map", "icon": Icons.map, "index": 1},
+    {"title": "Add Restaurant", "icon": Icons.add_box_rounded, "index": 2},
+    {"title": "Start Geofence", "icon": Icons.play_circle_fill, "index": 3},
+  ];
+
   Widget _buildContentView() {
     return Column(
       children: [
@@ -152,15 +155,58 @@ class _MyAppState extends State<MyApp> {
             newScreen(const HospitalScreen());
           } else if (index == 1) {
             newScreen(const MapScreen());
-          }else if (index == 2) {
+          } else if (index == 2) {
             newScreen(AddHospitalScreen());
+          } else if (index == 3) {
+            if(_geofenceService.isRunningService){
+              data.removeAt(3);
+              _geofenceService.stop();
+              data.insert(3, {"title": "Start Geofence", "icon": Icons.play_circle_fill, "index": 3});
+            }else{
+              print(geofenceList.length);
+              _geofenceService.start(geofenceList).catchError(_onError);
+              data.removeAt(3);
+              data.insert(3, {"title": "Stop Geofence", "icon": Icons.pause_circle_filled, "index": 3});
+            }
+            setState(() {
+
+            });
           }
         })
       ],
     );
   }
 
-  newScreen(pageName) => navigatorKey.currentState.push(MaterialPageRoute(builder: (BuildContext context) => pageName));
+  Widget buildGridView({
+    @required Function(int) onTap,
+  }) {
+    return GridView.count(
+      primary: false,
+      shrinkWrap: true,
+      childAspectRatio: 1.2,
+      crossAxisCount: 2,
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      mainAxisSpacing: 10.0,
+      crossAxisSpacing: 10.0,
+      children: data.map(
+            (option) => Card(
+          clipBehavior: Clip.antiAlias,
+          elevation: 3,
+          margin: EdgeInsets.zero,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(16))),
+          child: buildGridItem(
+            onTap: onTap,
+            quickLink: option,
+          ),
+        ),
+      )
+          .toList(),
+    );
+  }
+
+  newScreen(pageName) => navigatorKey.currentState
+      .push(MaterialPageRoute(builder: (BuildContext context) => pageName));
 }
 
 CarouselSlider buildSlider() {
@@ -211,39 +257,6 @@ CarouselSlider buildSlider() {
   );
 }
 
-Widget buildGridView({
-  @required Function(int) onTap,
-}) {
-  return GridView.count(
-    primary: false,
-    shrinkWrap: true,
-    childAspectRatio: 1.2,
-    crossAxisCount: 2,
-    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-    mainAxisSpacing: 10.0,
-    crossAxisSpacing: 10.0,
-    children: [
-      {"title": "Hospitals", "icon": Icons.local_hospital, "index": 0},
-      {"title": "Map", "icon": Icons.map, "index": 1},
-      {"title": "Add Hospital", "icon": Icons.add_box_rounded, "index": 2},
-      {"title": "Start Geofence", "icon": Icons.play_circle_fill, "index": 3},
-    ]
-        .map(
-          (option) => Card(
-            clipBehavior: Clip.antiAlias,
-            elevation: 3,
-            margin: EdgeInsets.zero,
-            shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16))),
-            child: buildGridItem(
-              onTap: onTap,
-              quickLink: option,
-            ),
-          ),
-        )
-        .toList(),
-  );
-}
 
 Widget buildGridItem({
   @required Map quickLink,
@@ -281,24 +294,27 @@ Widget buildGridItem({
   );
 }
 
-Future<void> displayNotification(String body,
+Future<void> displayNotification(String title, String body,
     {int id = 1, String payload}) async {
+   BigTextStyleInformation bigTextStyleInformation =
+  BigTextStyleInformation(
+    body,
+    contentTitle: "Restaurant : $title",
+  );
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   AndroidNotificationDetails androidPlatformChannelSpecifics =
-      const AndroidNotificationDetails(
-    'id',
-    'name',
-    channelDescription: 'description',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+       AndroidNotificationDetails('id', 'name',
+          channelDescription: 'description',
+          importance: Importance.high,
+          priority: Priority.high,
+          styleInformation: bigTextStyleInformation);
   NotificationDetails platformChannelSpecifics = NotificationDetails(
     android: androidPlatformChannelSpecifics,
   );
   await flutterLocalNotificationsPlugin.show(
     id,
-    "Geofence",
+    "Restaurant : $title",
     body,
     platformChannelSpecifics,
     payload: "1",

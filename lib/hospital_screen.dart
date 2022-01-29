@@ -8,7 +8,7 @@ class HospitalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Hospitals")),
+      appBar: AppBar(title: const Text("Restaurants")),
       body: ListView.separated(
         separatorBuilder: (_, int index) => const Divider(thickness: 1),
         itemCount: hospitals.length,

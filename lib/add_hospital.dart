@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:geofence_service/geofence_service.dart';
+import 'package:geofence_service/models/geofence_radius.dart';
 import 'package:my_geofence/hopitals.dart';
 import 'package:my_geofence/main.dart';
 import 'package:my_geofence/select_location_screen.dart';
@@ -10,13 +12,14 @@ class AddHospitalScreen extends StatelessWidget {
   final addressController = TextEditingController();
   final latController = TextEditingController();
   final lngController = TextEditingController();
+  final radController = TextEditingController();
   var formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Hospital"),
+        title: const Text("Add Restaurant"),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -25,14 +28,14 @@ class AddHospitalScreen extends StatelessWidget {
           child: Column(
             children: [
               buildTextField(
-                label: 'Hospital',
-                hint: 'Enter hospital name',
+                label: 'Restaurant',
+                hint: 'Enter restaurant name',
                 controller: hospitalController,
                 keyboardType: TextInputType.text,
                 keyboardAction: TextInputAction.next,
                 onValidator: (value) {
                   if (value.toString().trim().isEmpty) {
-                    return "Please enter hospital name";
+                    return "Please enter restaurant name";
                   }
                   return null;
                 },
@@ -40,13 +43,13 @@ class AddHospitalScreen extends StatelessWidget {
               const SizedBox(height: 16),
               buildTextField(
                 label: 'Address',
-                hint: 'Enter hospital address',
+                hint: 'Enter restaurant address',
                 controller: addressController,
                 keyboardType: TextInputType.text,
                 keyboardAction: TextInputAction.next,
                 onValidator: (value) {
                   if (value.toString().trim().isEmpty) {
-                    return "Please enter hospital address";
+                    return "Please enter restaurant address";
                   }
                   return null;
                 },
@@ -54,13 +57,13 @@ class AddHospitalScreen extends StatelessWidget {
               const SizedBox(height: 16),
               buildTextField(
                 label: 'Latitude',
-                hint: 'Enter hospital latitude',
+                hint: 'Enter restaurant latitude',
                 controller: latController,
                 keyboardType: TextInputType.number,
                 keyboardAction: TextInputAction.next,
                 onValidator: (value) {
                   if (value.toString().trim().isEmpty) {
-                    return "Please enter hospital latitude";
+                    return "Please enter restaurant latitude";
                   }
                   return null;
                 },
@@ -68,13 +71,27 @@ class AddHospitalScreen extends StatelessWidget {
               const SizedBox(height: 16),
               buildTextField(
                 label: 'Longitude',
-                hint: 'Enter hospital longitude',
+                hint: 'Enter restaurant longitude',
                 controller: lngController,
                 keyboardType: TextInputType.number,
                 keyboardAction: TextInputAction.next,
                 onValidator: (value) {
                   if (value.toString().trim().isEmpty) {
-                    return "Please enter hospital longitude";
+                    return "Please enter restaurant longitude";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              buildTextField(
+                label: 'Radius in meters',
+                hint: 'Enter radius',
+                controller: radController,
+                keyboardType: TextInputType.number,
+                keyboardAction: TextInputAction.done,
+                onValidator: (value) {
+                  if (value.toString().trim().isEmpty) {
+                    return "Please enter restaurant radius";
                   }
                   return null;
                 },
@@ -108,13 +125,22 @@ class AddHospitalScreen extends StatelessWidget {
                     address: addressController.text,
                     lat: double.parse(latController.text),
                     lng: double.parse(lngController.text),
+                    radius: double.parse(radController.text),
+                  ));
+                  geofenceList.add(Geofence(
+                    id: hospitalController.text,
+                    latitude: double.parse(latController.text),
+                    longitude: double.parse(lngController.text),
+                    radius: [
+                      GeofenceRadius(id: 'radius_400m', length: double.parse(radController.text)),
+                    ],
                   ));
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Hospital added successfully."),
+                    content: Text("Restaurant added successfully."),
                   ));
                   Navigator.pop(context);
                 },
-                child: const Text("Add Hospital"),
+                child: const Text("Add Restaurant"),
               )
             ],
           ),
