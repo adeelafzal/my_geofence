@@ -96,6 +96,7 @@ class _SearchLocationPageState extends State<SearchLocationPage>
   Future<List> getAddress(double lat, double lng) async {
     final coordinates = Coordinates(lat, lng);
     var addresses =
+
     await Geocoder.local.findAddressesFromCoordinates(coordinates);
     addresses.first;
     String fullAddress = addresses.first.addressLine;
